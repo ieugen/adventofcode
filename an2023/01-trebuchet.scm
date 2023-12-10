@@ -124,65 +124,71 @@ treb7uchet
 ;; Dacă nu este creștem indexul cu 1.
 ;;
 
-(define digit-words
-  (list "one" "two" "three"
-        "four" "five" "six" "seven"
-        "eight" "nine"))
-(display digit-words)
-
-(define word-digit-first-char
-  (list->char-set (list #\o #\t #\f #\s #\e #\n)))
-
-(char-set-contains? word-digit-first-char #\p)
-
-
 ;;
 ;; Check if we have a digit as a word in the document.
 ;; Start at current-idx and current char.
 ;; Return #f if not.
 ;; If it's a digit, it returns a pair of digit . chars to skip
 (define (is-word-digit? doc current-idx cc)
-  (cond
-   ((char=? cc #\o)
-    ;; check "one"
-    (when (string-contains doc "one" current-idx
-                           (+ current-idx (string-length "one")))
-      '(1 . 3)))
-   ((char=? cc #\t)
-    ;; check two or three
-    (if (string-contains doc "two" current-idx
-                         (+ current-idx (string-length "two")))
-        '(2 . 3)
-        (when (string-contains doc "three" current-idx
-                               (+ current-idx (string-length "three")))
-          '(3 . 5))))
-   ((char=? cc #\f)
-    ;; check four, five
-    (if (string-contains doc "four" current-idx
-                         (+ current-idx (string-length "four")))
-        '(4 . 4)
-        (when (string-contains doc "five" current-idx
-                               (+ current-idx (string-length "five")))
-          '(5 . 4))))
-   ((char=? cc #\s)
-    ;; check six, seven
-    (if (string-contains doc "six" current-idx
-                         (+ current-idx (string-length "six")))
-        '(6 . 3)
-        (when (string-contains doc "seven" current-idx
-                               (+ current-idx (string-length "seven")))
-          '(7 .5))))
-   ((char=? cc #\e)
-    ;; check eight
-    (when (string-contains "eight" current-idx
-                           (+ current-idx (string-length "eight")))
-      '(8 . 5)))
-   ((char=? cc #\n)
-    ;; check nine
-    (when (string-contains "nine" current-idx
-                           (+ current-idx (string-length "nine")))
-      '(9 . 4)))
-   (else #f)))
+  ;;(format #t "~a . ~a\n" current-idx cc)
+  (letrec* ((dlen (string-length doc))
+            (remaining (- dlen current-idx)))
+    (cond
+     ((char=? cc #\o)
+      ;; check "one"
+      (if (string-contains doc "one" current-idx
+                           (+ current-idx (min (string-length "one")
+                                               remaining)))
+          '(1 . 3)
+          #f))
+     ((char=? cc #\t)
+      ;; check two or three
+      (if (string-contains doc "two" current-idx
+                           (+ current-idx (min (string-length "two")
+                                               remaining)))
+          '(2 . 3)
+          (if (string-contains doc "three" current-idx
+                               (+ current-idx (min (string-length "three")
+                                                   remaining)))
+              '(3 . 5)
+              #f)))
+     ((char=? cc #\f)
+      ;; check four, five
+      (if (string-contains doc "four" current-idx
+                           (+ current-idx (min (string-length "four")
+                                               remaining)))
+          '(4 . 4)
+          (if (string-contains doc "five" current-idx
+                               (+ current-idx (min (string-length "five")
+                                                   remaining)))
+              '(5 . 4)
+              #f)))
+     ((char=? cc #\s)
+      ;; check six, seven
+      (if (string-contains doc "six" current-idx
+                           (+ current-idx (min (string-length "six")
+                                               remaining)))
+          '(6 . 3)
+          (if (string-contains doc "seven" current-idx
+                               (+ current-idx (min (string-length "seven")
+                                                   remaining)))
+              '(7 . 5)
+              #f)))
+     ((char=? cc #\e)
+      ;; check eight
+      (if (string-contains doc "eight" current-idx
+                           (+ current-idx (min (string-length "eight")
+                                               remaining)))
+          '(8 . 5)
+          #f))
+     ((char=? cc #\n)
+      ;; check nine
+      (if (string-contains doc "nine" current-idx
+                           (+ current-idx (min (string-length "nine")
+                                               remaining)))
+          '(9 . 4)
+          #f))
+     (else #f))))
 
 
 (define puzzle-map2 "two1nine
@@ -193,6 +199,9 @@ xtwone3four
 zoneight234
 7pqrstsixteen
 ")
+
+(string-length puzzle-map2)
+
 
 (string-contains puzzle-map2 "one" 26 30)
 
@@ -212,25 +221,35 @@ zoneight234
                   (is-digit? (char-numeric? cc))
                   (word-digit (is-word-digit? calibration-doc x cc))
                   (next-idx (if word-digit
-                                (+ x (cdr word-digit) )
+                                (+ x (cdr word-digit))
                                 (+ x 1)))
                   (digit (if is-digit?
                              (char->digit cc)
-                             (when word-digit
-                               (car word-digit)))))
-          (display cc)
+                             (if word-digit
+                                 (car word-digit)
+                                 #f))))
           (if (char=? cc #\newline)
               (if (not n2)
                   (if (not n1)
                       (calibrate next-idx sum #nil #nil)
-                      (calibrate next-idx (+ sum (* 10 n1) n1) #nil #nil))
-                  (calibrate next-idx (+ sum (* 10 n1) n2) #nil #nil))
-              (if is-digit?
+                      (letrec* ((line-sum (+ (* n1 10) n1))
+                                (sum2 (+ sum line-sum)))
+                        (format #t "Line sum (~a): ~a~a = ~a (~a)\n"
+                                sum n1 n1 sum2 x)
+                        (calibrate next-idx sum2 #nil #nil)))
+                  (letrec* ((line-sum (+ (* n1 10) n2))
+                            (sum2 (+ line-sum sum)))
+                    (format #t "Line sum (~a): ~a~a = ~a (~a)\n"
+                            sum n1 n2 sum2 x)
+                    (calibrate next-idx sum2 #nil #nil)))
+              (if digit
                   (if n1
                       (calibrate next-idx sum n1 digit)
                       (calibrate next-idx sum digit n2))
                   (calibrate next-idx sum n1 n2))))
         sum)))
 
-
 (calibration-score-words puzzle-map2)
+
+(calibration-score-words (call-with-input-file "an2023/01-trebuchet-input-01.txt"
+                           get-string-all))
