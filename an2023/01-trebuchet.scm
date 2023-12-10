@@ -139,54 +139,54 @@ treb7uchet
       (if (string-contains doc "one" current-idx
                            (+ current-idx (min (string-length "one")
                                                remaining)))
-          '(1 . 3)
+          1
           #f))
      ((char=? cc #\t)
       ;; check two or three
       (if (string-contains doc "two" current-idx
                            (+ current-idx (min (string-length "two")
                                                remaining)))
-          '(2 . 3)
+          2
           (if (string-contains doc "three" current-idx
                                (+ current-idx (min (string-length "three")
                                                    remaining)))
-              '(3 . 5)
+              3
               #f)))
      ((char=? cc #\f)
       ;; check four, five
       (if (string-contains doc "four" current-idx
                            (+ current-idx (min (string-length "four")
                                                remaining)))
-          '(4 . 4)
+          4
           (if (string-contains doc "five" current-idx
                                (+ current-idx (min (string-length "five")
                                                    remaining)))
-              '(5 . 4)
+              5
               #f)))
      ((char=? cc #\s)
       ;; check six, seven
       (if (string-contains doc "six" current-idx
                            (+ current-idx (min (string-length "six")
                                                remaining)))
-          '(6 . 3)
+          6
           (if (string-contains doc "seven" current-idx
                                (+ current-idx (min (string-length "seven")
                                                    remaining)))
-              '(7 . 5)
+              7
               #f)))
      ((char=? cc #\e)
       ;; check eight
       (if (string-contains doc "eight" current-idx
                            (+ current-idx (min (string-length "eight")
                                                remaining)))
-          '(8 . 5)
+          8
           #f))
      ((char=? cc #\n)
       ;; check nine
       (if (string-contains doc "nine" current-idx
                            (+ current-idx (min (string-length "nine")
                                                remaining)))
-          '(9 . 4)
+          9
           #f))
      (else #f))))
 
@@ -215,41 +215,42 @@ zoneight234
   (let calibrate ((x 0)
                   (sum 0)
                   (n1 #nil)
-                  (n2 #nil))
+                  (n2 #nil)
+                  (prev-line-start 0))
     (if (< x (string-length calibration-doc))
         (letrec* ((cc (string-ref calibration-doc x))
                   (is-digit? (char-numeric? cc))
                   (word-digit (is-word-digit? calibration-doc x cc))
-                  (next-idx (if word-digit
-                                (+ x (cdr word-digit))
-                                (+ x 1)))
+                  (next-idx (+ x 1))
                   (digit (if is-digit?
                              (char->digit cc)
                              (if word-digit
-                                 (car word-digit)
+                                 word-digit
                                  #f))))
           (if (char=? cc #\newline)
               (if (not n2)
                   (if (not n1)
-                      (calibrate next-idx sum #nil #nil)
+                      (calibrate next-idx sum #nil #nil prev-line-start)
                       (letrec* ((line-sum (+ (* n1 10) n1))
                                 (sum2 (+ sum line-sum)))
-                        (format #t "Line sum (~a): ~a~a = ~a (~a)\n"
-                                sum n1 n1 sum2 x)
-                        (calibrate next-idx sum2 #nil #nil)))
+                        (format #t "Line sum (~a): ~a~a = ~a (~a) ~a\n"
+                                sum n1 n1 sum2 x
+                                (string-copy calibration-doc prev-line-start x))
+                        (calibrate next-idx sum2 #nil #nil x)))
                   (letrec* ((line-sum (+ (* n1 10) n2))
                             (sum2 (+ line-sum sum)))
-                    (format #t "Line sum (~a): ~a~a = ~a (~a)\n"
-                            sum n1 n2 sum2 x)
-                    (calibrate next-idx sum2 #nil #nil)))
+                    (format #t "Line sum (~a): ~a~a = ~a (~a) ~a\n"
+                            sum n1 n2 sum2 x
+                            (string-copy calibration-doc prev-line-start x))
+                    (calibrate next-idx sum2 #nil #nil x)))
               (if digit
                   (if n1
-                      (calibrate next-idx sum n1 digit)
-                      (calibrate next-idx sum digit n2))
-                  (calibrate next-idx sum n1 n2))))
+                      (calibrate next-idx sum n1 digit prev-line-start)
+                      (calibrate next-idx sum digit n2 prev-line-start))
+                  (calibrate next-idx sum n1 n2 prev-line-start))))
         sum)))
 
-(calibration-score-words puzzle-map2)
+;;(calibration-score-words puzzle-map2)
 
 (calibration-score-words (call-with-input-file "an2023/01-trebuchet-input-01.txt"
                            get-string-all))
