@@ -1,4 +1,4 @@
-(define-module (an2023 01-trebuchet)
+(define-module (an2023 a01-trebuchet)
   #:use-module (ice-9 format)
   #:use-module (ice-9 textual-ports))
 

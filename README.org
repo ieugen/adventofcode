@@ -1,3 +1,8 @@
 #+TITLE: Advent of code
 
 [[https://adventofcode.com/]]
+
+Fiecare an într-un limbaj diferit.
+
+- 2023 - guile scheme
+- 2024 - go
